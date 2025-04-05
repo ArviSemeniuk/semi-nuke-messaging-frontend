@@ -2,6 +2,15 @@
   text-align: center;
 }
 
+.app-container {
+  text-align: center; /* Center text horizontally */
+  display: flex;
+  flex-direction: column; /* Stack content vertically */
+  justify-content: center; /* Center content vertically */
+  align-items: center; /* Align items in the center horizontally */
+  height: 100vh; /* Full viewport height to center everything vertically */
+}
+
 .App-logo {
   height: 40vmin;
   pointer-events: none;
