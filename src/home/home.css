@@ -3,3 +3,7 @@
     height:auto;
     display:inline-block;
 }
+
+.serverMsg {
+    color: red;
+}
