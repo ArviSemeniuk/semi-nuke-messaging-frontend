@@ -20,7 +20,7 @@ function Home_page()
       <h1>semi-nuke-messaging</h1>
       <button onClick={handleSignIn}>Sign-In</button>
       <div class="divider"/>
-      <button onClick={handleSignUp}>Sign-Up</button>
+      <button onClick={handleSignUp}>Register</button>
     </div>
   );
 }
