@@ -1,16 +1,23 @@
+import React from "react";
+import { useNavigate } from "react-router-dom";
+
+
 // home page function which asks user to either sign-un or sign-up
-function home_page({ socket }) {
-  const handleSignIn = () => {
-    //socket.send(message); // Send message via WebSocket to C++ backend
-    socket.send("si");
-  }
+function Home_page() 
+{
+    const navigate = useNavigate();
 
-  const handleSignUp = () => {
-    socket.send("su");
-  }
+    const handleSignIn = () => {
+      navigate("/signin")
+    }
 
-  return (
+    const handleSignUp = () => {
+      navigate("/signup")
+    }
+
+    return (
     <div>
+      <h1>semi-nuke-messaging</h1>
       <button onClick={handleSignIn}>Sign-In</button>
       <div class="divider"/>
       <button onClick={handleSignUp}>Sign-Up</button>
@@ -18,4 +25,4 @@ function home_page({ socket }) {
   );
 }
 
-export default home_page;
+export default Home_page;
