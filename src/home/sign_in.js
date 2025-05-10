@@ -1,12 +1,60 @@
-import { useState } from "react";
+import { useContext, useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+
+import { WebSocketContext } from "../websocket/WSContext";
+
+import '../home/home.css';
+import '../home/sign_in.css';
 
 
-function Sign_in_page({ socket, serverMessage })
+function Sign_in_page()
 {
-    const [username, setUsername] = useState("");
-    const [password, setPassword] = useState("");
+    const {subscribe, unsubscribe, sendMessage, getWS} = useContext(WebSocketContext);
+    const navigate = useNavigate();
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
     const [fields, setFields] = useState({});
     const [errors, setErrors] = useState({});
+    const [serverMessage, setServerResponse] = useState("");
+    
+    
+    useEffect(() => {
+        const sessionToken = localStorage.getItem("sessionToken");
+
+        // if sessionToken exists then send to server
+        if (sessionToken) {
+            sendMessage({ type: "CHECK_TOKEN", token: sessionToken })
+        } 
+
+        // subscribe to channel and register callback
+        subscribe("CHECK_TOKEN_RESULT", (serverPayload) => {
+            if (serverPayload.res === true) {
+                navigate("/chat");
+            } 
+            else {
+                navigate("/signin");
+            }
+        });
+
+        subscribe("SIGN_IN_STATUS", (serverPayload) => {
+            if (serverPayload.message === true) {
+                localStorage.setItem("sessionToken", serverPayload.token);
+                localStorage.setItem("isLoggedIn", "true");
+                navigate('/chat');
+            }
+            else {
+                setServerResponse(serverPayload.message);
+            }
+        });
+
+        return () => {
+            // unsubscribe from channel during cleanup
+            unsubscribe("CHECK_TOKEN_RESULT");
+            unsubscribe("SIGN_IN_STATUS");
+        }
+
+    }, [sendMessage, navigate, subscribe, unsubscribe])
+
 
     const handleValidation = () => {
         const formFields = {...fields};
@@ -29,7 +77,7 @@ function Sign_in_page({ socket, serverMessage })
         if (typeof formFields["username"] !== 'undefined') {
             if (formFields["username"].length < 4) {
                 formIsValid = false;
-                formErrors["username"] = "Usernames are at least 4 characetrs long!";
+                formErrors["username"] = "Usernames are at least 4 characters long!";
             }
         }
 
@@ -49,7 +97,7 @@ function Sign_in_page({ socket, serverMessage })
         if (typeof formFields["password"] !== 'undefined') {
             if (formFields["password"].length < 8) {
                 formIsValid = false;
-                formErrors["password"] = "Passwords are at least 8 characetrs long!";
+                formErrors["password"] = "Passwords are at least 8 characters long!";
             }
         }
 
@@ -57,15 +105,17 @@ function Sign_in_page({ socket, serverMessage })
         return formIsValid;
     }
 
-    const handleChange = (field, value) => {
+    const handleChange = (e) => {
         setFields({
           ...fields,
-          [field]: value
-        })
-      }
+          [e.target.name]: e.target.value,
+        });
+    };
 
     const handleSubmit = (e) => {
         e.preventDefault();
+
+        const socket = getWS();
 
         if (handleValidation()) {
             if (socket && socket.readyState === WebSocket.OPEN) {
@@ -76,27 +126,40 @@ function Sign_in_page({ socket, serverMessage })
                 });
 
                 socket.send(message);
-                localStorage.setItem("username", username);
-            } 
-            else {
+                localStorage.setItem("username", username); // PROBABLY NOT A GOOD IDEA
+            } else {
                 console.log("WebSocket is not connected")
             }
         }
     };
 
+
     return (
         <form onSubmit = {e => handleSubmit(e)}>
-        <div>
-            <h1>Sign-In</h1>
+        <div className="background-container">
+        <div className="background-overlay"></div>
 
-            <input type="text" placeholder="Username..." onChange={(e) => handleChange("username", e.target.value) + setUsername(e.target.value)} value={fields["username"]} />
+            <div className="content">
+            <div className="sign-in-box">
+            <h1>Sign In</h1>
+
+            <input className="input-field" type="text" name="username" placeholder="Username..." value={fields.username || ''}
+                onChange={(e) => {
+                    handleChange(e);
+                    setUsername(e.target.value);
+                }} />
             <br /> 
-            <p1 className="error">{errors["username"]}</p1>
+            <span className="error">{errors["username"]}</span>
             <br />
-            <input type="password" placeholder="Password..." onChange={(e) => handleChange("password", e.target.value) + setPassword(e.target.value)} value={fields["password"]} />
+
+            <input className="input-field" type="password" name="password" placeholder="Password..." value={fields.password || ''}
+                onChange={(e) => {
+                handleChange(e);
+                setPassword(e.target.value);
+            }} />
             <br />
             <span className="error">{errors["password"]}</span>
-            <br />        
+                  
 
             {serverMessage && (
                 <div className="serverMsg">
@@ -104,7 +167,10 @@ function Sign_in_page({ socket, serverMessage })
                 </div>
             )}
             <br />
-            <button id="submit" value="Submit"> Sign-In </button>
+            <button className="button-73" id="submit" value="Submit"> Sign In </button>
+            </div>
+            </div>
+
         </div>
         </form>
     );

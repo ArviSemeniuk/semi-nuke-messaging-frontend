@@ -1,9 +1,84 @@
+.background-container {
+    position: relative;
+    height: 100vh;
+    width: 100vw;
+    background-image: linear-gradient(darkorchid, black);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    overflow: hidden;
+}
+
+.background-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* semi-transparent black */
+    z-index: 1;
+  }
+
+  .content {
+    position: relative;
+    z-index: 2; /* Make sure your content appears *above* the overlay */
+    color: white;
+    text-align: center;
+    padding-top: 20vh; /* Center content vertically */
+  }
+
 .divider {
-    width:20px;
-    height:auto;
+    width:60px;
     display:inline-block;
 }
 
 .serverMsg {
     color: red;
+    font-weight: bold;
+    font-size: large;
+    font-display:block ;
+    -webkit-text-stroke-width: 0.2px;
+    -webkit-text-stroke-color: #000000;
+}
+
+.button-73 {
+  appearance: none;
+  background-color: #FFFFFF;
+  border-radius: 30em;
+  border-style: none;
+  box-sizing: border-box;
+  color: #000000;
+  cursor: pointer;
+  display: inline-block;
+  font-family: -apple-system,sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: -.24px;
+  margin: 0;
+  outline: none;
+  padding: 1rem 1.3rem;
+  quotes: auto;
+  text-align: center;
+  text-decoration: none;
+  transition: all .15s;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.button-73:hover {
+  background-color: #FFC229;
+  box-shadow: #FF6314 0 -6px 8px inset;
+}
+
+.button-73:active {
+  transform: scale(1);
+}
+
+@media (min-width: 760px) {
+  .button-73 {
+    margin-top: 40px;
+    font-size: 1.0rem;
+    padding: .75rem 2rem;
+  }
 }

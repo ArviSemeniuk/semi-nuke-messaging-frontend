@@ -1,12 +1,66 @@
-import { useState } from "react";
+import { useContext, useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+
+import { WebSocketContext } from "../websocket/WSContext";
 
 
-function Sign_up_page({ socket, serverMessage })
+function Sign_up_page()
 {
-    const [username, setUsername] = useState("");
-    const [password, setPassword] = useState("");
+    const {subscribe, unsubscribe, sendMessage, getWS} = useContext(WebSocketContext);
+    const socket = getWS();
+    const navigate = useNavigate();
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
     const [fields, setFields] = useState({});
     const [errors, setErrors] = useState({});
+    const [usernameStatus, setUsernameStatus] = useState({ message: '', color: '' });
+
+
+    useEffect(() => {
+        const sessionToken = localStorage.getItem("sessionToken");
+
+        // if sessionToken exists then send to server
+        if (sessionToken) {
+            sendMessage({ type: "CHECK_TOKEN", token: sessionToken })
+        } 
+
+        subscribe("CHECK_TOKEN_RESULT", (serverPayload) => {
+            if (serverPayload.res === true) {
+                navigate("/chat");
+            } 
+            else {
+                navigate("/signup");
+            }
+        });
+        
+        // checks if username is taken. Server will respond with a boolean true or false.
+        subscribe("USERNAME_STATUS", (serverPayload) => {
+            if (serverPayload.available) {
+                setUsernameStatus({ message: "Username available ✅", color: "green" });
+            } else {
+                setUsernameStatus({ message: "Username already taken ❌", color: "red" });
+            }
+        });
+
+        // once user presses the register button, a json payload will be sent to the server. Server will respond with '1' or nothing
+        subscribe("REGISTER_STATUS", (serverPayload) => {
+            if (serverPayload.message === true) {
+                localStorage.setItem("sessionToken", serverPayload.token);
+                localStorage.setItem("isLoggedIn", "true");
+                navigate('/chat');
+            }
+        });
+
+        return () => {
+            // unsubscribe from channel during cleanup
+            unsubscribe("CHECK_TOKEN_RESULT");
+            unsubscribe("USERNAME_STATUS");
+            unsubscribe("REGISTER_STATUS");
+            //localStorage.setItem("isLoggedIn", "false");
+        }
+
+    }, [sendMessage, navigate, subscribe, unsubscribe])
+
 
     const handleValidation = () => {
         const formFields = {...fields};
@@ -57,12 +111,32 @@ function Sign_up_page({ socket, serverMessage })
         return formIsValid;
     }
 
-    const handleChange = (field, value) => {
+
+    const handleUsernameChange = (dynamicUsername) => {
+        if (dynamicUsername.length > 3) {
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                const checkUsername = JSON.stringify({
+                    type: "checkUsername",
+                    username: dynamicUsername,
+                });
+
+                socket.send(checkUsername);
+            } else {
+                console.log("WebSocket is not connected");
+            }
+        } else {
+            setUsernameStatus('');
+        }
+    }
+
+
+    const handleChange = (e) => {
         setFields({
-          ...fields,
-          [field]: value
+            ...fields,
+            [e.target.name]: e.target.value,
         })
-      }
+    }
+
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -84,26 +158,43 @@ function Sign_up_page({ socket, serverMessage })
         }
     };
     
+
     return (
         <form onSubmit = {e => handleSubmit(e)}>
-        <div>
-            <h1> Register </h1>
-            <input type="text" placeholder="New Username..." onChange={(e) => handleChange("username", e.target.value) + setUsername(e.target.value)} value={fields["username"]} />
-            <br />
+        <div className="background-container">
+        <div className="background-overlay"></div>
 
-            {serverMessage && (
-                <div className="serverMsg">
-                {serverMessage}
+            <div className="content">
+            <div className="sign-in-box">
+            <h1> Register </h1>
+
+            <input className="input-field" type="text" name="username" placeholder="New Username..." value={fields.username || ''}
+            onChange={(e) => { 
+                handleChange(e); 
+                handleUsernameChange(e.target.value); 
+                setUsername(e.target.value);
+            }}/>
+            <br/>
+
+            {usernameStatus.message && (
+                <div className="serverMsg" style={{color: usernameStatus.color}}>
+                {usernameStatus.message}
                 </div>
             )} 
             
-            <p1 className="error">{errors["username"]}</p1>
-            <br />
-            <input type="password" placeholder="New Password..." onChange={(e) => handleChange("password", e.target.value) + setPassword(e.target.value)} value={fields["password"]} />
-            <br />
+            <span className="error">{errors["username"]}</span>
+            <br/>
+            <input className="input-field" type="password" name="password" placeholder="New Password..." value={fields.password || ''}
+            onChange={(e) => {
+                handleChange(e);
+                setPassword(e.target.value);
+            }}/>
+            <br/>
             <span className="error">{errors["password"]}</span>
-            <br />    
-            <button id="submit" value="Submit"> Register </button>
+            <br/>
+            <button className="button-73" id="submit" value="Submit"> Register </button>
+            </div>
+            </div>
 
         </div>
         </form>
