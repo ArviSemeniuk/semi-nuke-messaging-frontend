@@ -1,48 +1,75 @@
-import { useState, useEffect } from "react";
+import { useContext, useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { WebSocketContext } from "../websocket/WSContext";
+import { useParams } from 'react-router-dom';
+
+import Header from '../chat/header.js'
 
 
-function Chat_room({ socket })
+function Chat_room()
 {
+    const {subscribe, unsubscribe, sendMessage, getWS} = useContext(WebSocketContext);
+    const navigate = useNavigate();
     const [message, setChatMessage] = useState("");
     const [messages, setMessages] = useState([]); // <-- list of all messages
     const [error, setError] = useState("");
     const username = localStorage.getItem("username");
+    const sessionToken = localStorage.getItem("sessionToken");
+    const { roomID } = useParams(); 
+
+
+    useEffect(() => {
+        // make sure roomID is an int
+        if (isNaN(roomID)) {
+            navigate('/'); // or show a 404 error page
+            return;
+        }
+
+        subscribe("ACCESS_DENIED", () => {
+            navigate("/chat");
+        });
+
+        subscribe("CHECK_TOKEN_RESULT", (serverPayload) => {
+            if (serverPayload.res === false) {
+                localStorage.removeItem("sessionToken");
+                localStorage.removeItem("username");
+                localStorage.setItem("isLoggedIn", "false");
+                navigate("/signin");
+            }
+        });
+
+        subscribe("load", (loadMessage) => {
+            setMessages(loadMessage.messages)
+        });
+        
+        subscribe("chat", (chat) => {
+            setMessages(prev => [...prev, {
+                username: chat.username,
+                message: chat.message
+            }]);
+        });
+
+        // Cleanup
+        return () => {
+            unsubscribe("ACCESS_DENIED");
+            unsubscribe("CHECK_TOKEN_RESULT");
+            unsubscribe("load");
+            unsubscribe("chat");
+        };
+    }, [navigate, subscribe, unsubscribe, roomID]);
 
     
     useEffect(() => {
-        if (!socket) return;
-    
-        const handleMessage = (event) => {
-            const data = JSON.parse(event.data);
-    
-            if (data.type === "load") {
-                setMessages(data.messages);
-            } else if (data.type === "chat") {
-                setMessages(prev => [...prev, {
-                    username: data.username,
-                    message: data.message
-                }]);
-            }
-        };
+        const sessionToken = localStorage.getItem("sessionToken");
 
-        const handleOpen = () => {
-            socket.send(JSON.stringify({ type: "load" }));
-        };
+        // if sessionToken exists then send to server
+        if (sessionToken) {
+            sendMessage({ type: "CHECK_TOKEN", token: sessionToken })
+            sendMessage({ type: "load", room: roomID, user: username })
+        } 
 
-        socket.addEventListener("message", handleMessage);
-        socket.addEventListener("open", handleOpen);
 
-        // 👉 ADD THIS check immediately after adding listeners
-        if (socket.readyState === WebSocket.OPEN) {
-            socket.send(JSON.stringify({ type: "load" }));
-        }
-
-        // Cleanup when the component unmounts
-        return () => {
-            socket.removeEventListener("message", handleMessage);
-            socket.removeEventListener("open", handleOpen);
-        };
-    }, [socket]);
+    }, [sendMessage, roomID, username]);
 
 
     const handleValidation = () => {
@@ -63,17 +90,19 @@ function Chat_room({ socket })
         e.preventDefault();
 
         if (handleValidation()) {
+            const socket = getWS();
             if (socket && socket.readyState === WebSocket.OPEN) {
                 const dataToSend = JSON.stringify({
                     type: "chat",
                     username: username,
                     message: message,
+                    room: roomID,
                 });
 
                 socket.send(dataToSend);
+                socket.send(JSON.stringify({ type: "EXTEND_SESSION", token: sessionToken}));
                 setChatMessage(""); // Clear after sending
-            } 
-            else{
+            } else {
                 console.log("WebSocket is not connected")
             }
         }
@@ -81,7 +110,9 @@ function Chat_room({ socket })
 
 
     return (
-        <div>
+        <>
+        <Header />
+        <div style={{textAlign: "center"}}>
             <h1> Chat Room </h1>
 
             <div>
@@ -97,6 +128,7 @@ function Chat_room({ socket })
             <br />
             <span className="error"> {error} </span>
         </div>
+        </>
     );
 }
 
