@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { WebSocketContext } from "../websocket/WSContext";
 
 import Header from '../chat/header.js'
+import '../home/home.css';
+import '../chat/dashboard.css'
 
 // Page to add new chat room with other user/s or enter existing chat rooms
 function Dashboard_page()
@@ -127,16 +129,22 @@ function Dashboard_page()
 
     // page layout
     return (
-        <>
-        <Header />
+        <div className="background-container">
+            <div className="background-overlay"></div>
+            <div className="dashboard-content">
+            <Header />
 
-        <div>
+            <div className="add-chat-content">
+            <h1>Add New Chat</h1>
+            <div class="button-12">
             <button onClick={() => handleClick()}>+ Add Chat</button>
+            </div>
             <span className="error"> {error} </span>
 
             {isOpen && (
                 <div className="add-chat-modal">
                     <input
+                        className="friend-input-field"
                         type="text"
                         placeholder="Search for friends..."
                         value={searchTerm || ''}
@@ -145,24 +153,34 @@ function Dashboard_page()
                         }}
                     />
                     <ul>
+                        <div className="button-12-group">
                         {results.map((username, index) => (
-                            <li key={index}>
+                            <li class="button-12" key={index}>
                                 <button onClick={() => handleStartChat(username)}>{username}</button>
                             </li>
                         ))}
+                        </div>
                     </ul>
                 </div>
             )}
+            </div>
 
-            <h1>Existing Chats</h1>
-            {roomNamesRes.map((room, index) => (
-                <div key={index}>
-                    <button onClick={() => handleClickChatRoom(room.roomID)}> {room.roomName}</button>
+            <div className="existing-chats-content">
+                <h1>Direct Messages</h1>
+
+                <div className="button-12-group">
+                    {roomNamesRes.map((room, index) => (
+                        <div class="button-12" key={index}>
+                            <button onClick={() => handleClickChatRoom(room.roomID)}> {room.roomName}</button>
+                        </div>
+                    ))}
                 </div>
-            ))}
+
+            </div>
+
+            </div>
 
         </div>
-        </>
     )
 }
 

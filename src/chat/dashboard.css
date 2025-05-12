@@ -1,0 +1,129 @@
+.dashboard-content {
+    position: relative; 
+    z-index: 2; /* Make sure your content appears *above* the overlay */
+    color: white;
+}
+
+
+.add-chat-content {
+  position: relative;
+  left: 400px;
+  top: 50px;
+}
+
+
+.friend-input-field {
+  width: 15%;
+  padding: 14px;
+  margin: 10px 0;
+  border-radius: 12px;
+  border-style: solid;
+  border-width: 1px;
+  font-size: 16px;
+
+  background: transparent;
+  box-shadow: 0px 0.5px 1px rgba(0, 0, 0, 0.1), inset 0px 0.5px 0.5px rgba(255, 255, 255, 0.5), 0px 0px 0px 0.5px rgba(0, 0, 0, 0.12);
+  color: #DFDEDF;
+
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+  
+.friend-input-field:focus {
+  outline: none;
+  background: transparent;
+}
+
+
+.existing-chats-content {
+  position: relative;
+  left: 400px;
+  top: 50px;
+}
+
+
+.button-15 {
+  background-image: linear-gradient(#42A1EC, #0070C9);
+  border: 1px solid #0077CC;
+  border-radius: 4px;
+  box-sizing: border-box;
+  color: #FFFFFF;
+  cursor: pointer;
+  direction: ltr;
+  display: block;
+  font-family: "SF Pro Text","SF Pro Icons","AOS Icons","Helvetica Neue",Helvetica,Arial,sans-serif;
+  font-size: 17px;
+  font-weight: 400;
+  letter-spacing: -.022em;
+  line-height: 1.47059;
+  min-width: 30px;
+  overflow: visible;
+  padding: 4px 15px;
+  text-align: center;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  white-space: nowrap;
+}
+
+.button-15:disabled {
+  cursor: default;
+  opacity: .3;
+}
+
+.button-15:hover {
+  background-image: linear-gradient(#51A9EE, #147BCD);
+  border-color: #1482D0;
+  text-decoration: none;
+}
+
+.button-15:active {
+  background-image: linear-gradient(#3D94D9, #0067B9);
+  border-color: #006DBC;
+  outline: none;
+}
+
+.button-15:focus {
+  box-shadow: rgba(131, 192, 253, 0.5) 0 0 0 3px;
+  outline: none;
+}
+
+/* Chat Room/DM buttons */
+.button-12-group {
+  display: flex;
+  flex-direction: column; /* stack buttons vertically */
+  gap: 0.5rem;
+}
+
+.button-12 button {
+  width: 100px;           /* fixed width for all buttons */
+  text-align: left;       /* align text to the left */
+  cursor: pointer;
+ 
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 10px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
+  border-radius: 12px;
+  border-style: solid;
+  border-width: 1px;
+
+  background: transparent;
+  box-shadow: 0px 0.5px 1px rgba(0, 0, 0, 0.1), inset 0px 0.5px 0.5px rgba(255, 255, 255, 0.5), 0px 0px 0px 0.5px rgba(0, 0, 0, 0.12);
+  color: #DFDEDF;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.button-12 button:hover {
+  background-image: linear-gradient(#51A9EE, #147BCD);
+  border-color: #1482D0;
+  text-decoration: none;
+}
+
+.button-12 button:focus {
+  box-shadow: inset 0px 0.8px 0px -0.25px rgba(255, 255, 255, 0.2), 0px 0.5px 1px rgba(0, 0, 0, 0.1), 0px 0px 0px 3.5px rgba(58, 108, 217, 0.5);
+  outline: 0;
+}
