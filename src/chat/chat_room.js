@@ -64,7 +64,7 @@ function Chat_room({ roomID, onClose, roomName, openChats, setActiveChatID, setS
     useEffect(() => {
         if (unreadStartIndex !== null) {
             const timeout = setTimeout(() => {
-                const socket = getWS(); // Or however you access your WebSocket
+                const socket = getWS();
 
                 if (socket && socket.readyState === WebSocket.OPEN) {
                     socket.send(JSON.stringify({type: "MARK_AS_READ", roomID, readBy: username}));
