@@ -24,7 +24,7 @@ function WebSocketProvider({ children }) {
                 ws.current.send(JSON.stringify(message));
             } else {
                 //console.log("WebSocket not ready, retrying...");
-                setTimeout(send, 10); // Retry every 10ms until open
+                setTimeout(send, 100); // Retry every 100ms until open
             }
         };
         send();

@@ -120,7 +120,7 @@ function Sign_in_page()
         if (handleValidation()) {
             if (socket && socket.readyState === WebSocket.OPEN) {
                 const message = JSON.stringify({
-                    type: "si",
+                    type: "SIGN_IN",
                     username: username,
                     password: password,
                 });

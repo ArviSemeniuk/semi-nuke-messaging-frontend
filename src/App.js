@@ -9,7 +9,6 @@ import SignInPage from "./home/sign_in.js";
 import SignUpPage from "./home/sign_up.js";
 import ProtectedRoute from "./home/protected_route.js";
 import DashboardPage from "./chat/dashboard.js";
-import ChatPage from "./chat/chat_room.js";
 
 import './App.css';
 
@@ -27,10 +26,6 @@ function App()
                 <ProtectedRoute>
                     <DashboardPage/> 
                 </ProtectedRoute> } />
-            <Route path="/chat/:roomID" element={
-                <ProtectedRoute>
-                    <ChatPage/>
-                </ProtectedRoute> } /> 
         </Routes>
     </WebSocketProvider>
     );
