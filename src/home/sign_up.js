@@ -42,7 +42,7 @@ function Sign_up_page()
             }
         });
 
-        // once user presses the register button, a json payload will be sent to the server. Server will respond with '1' or nothing
+        // once user presses the register button, a json payload will be sent to the server. Server will respond with true or false
         subscribe("REGISTER_STATUS", (serverPayload) => {
             if (serverPayload.message === true) {
                 localStorage.setItem("sessionToken", serverPayload.token);
@@ -56,7 +56,6 @@ function Sign_up_page()
             unsubscribe("CHECK_TOKEN_RESULT");
             unsubscribe("USERNAME_STATUS");
             unsubscribe("REGISTER_STATUS");
-            //localStorage.setItem("isLoggedIn", "false");
         }
 
     }, [sendMessage, navigate, subscribe, unsubscribe])
@@ -116,7 +115,7 @@ function Sign_up_page()
         if (dynamicUsername.length > 3) {
             if (socket && socket.readyState === WebSocket.OPEN) {
                 const checkUsername = JSON.stringify({
-                    type: "checkUsername",
+                    type: "CHECK_USERNAME",
                     username: dynamicUsername,
                 });
 
@@ -144,7 +143,7 @@ function Sign_up_page()
         if (handleValidation()) {
             if (socket && socket.readyState === WebSocket.OPEN) {
                 const message = JSON.stringify({
-                    type: "su",
+                    type: "SIGN_UP",
                     username: username,
                     password: password,
                 });
