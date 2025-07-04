@@ -1,4 +1,4 @@
-import { useContext, useState, useEffect, useRef, Fragment } from "react";
+import { useContext, useState, useEffect, useRef, Fragment, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { WebSocketContext } from "../websocket/WSContext";
 
@@ -38,45 +38,48 @@ function formatTimestamp(timestamp) {
 }
 
 
-function Chat_room({ roomID, onClose, roomName, openChats, setActiveChatID, setSortedRooms, setUnreadMessagesCount })
+function Chat_room({ roomID, onClose, roomName, openChats, activeChatID, setActiveChatID, setSortedRooms, setUnreadMessagesCount })
 {
     const {subscribe, unsubscribe, sendMessage, getWS} = useContext(WebSocketContext);
     const navigate = useNavigate();
-    const [message, setChatMessage] = useState("");
-    const [messages, setMessages] = useState([]); // <-- list of all messages
+    const [message, setChatMessage] = useState(""); // <-- current chat message being typed by user in the room
+    const [messages, setMessages] = useState([]); // <-- list of all chat messages in the room based on roomID
     const [unreadStartIndex, setUnreadStartIndex] = useState(null); // <-- store index of first unread message
     const [error, setError] = useState("");
-    const username = localStorage.getItem("username");
+    const username = localStorage.getItem("username"); // <-- current name of user in the chat room
     const sessionToken = localStorage.getItem("sessionToken");
     const messagesEndRef = useRef(null);
+    const [isRead, setIsRead] = useState(false); // allow user to mark new messages as read
+    const newMessageSound = useMemo(() => new Audio('/sounds/ding-36029.mp3'), []);
 
 
+    // if sessionToken exists then send it to server for validation
+    // also load in the chat content based on roomID
     useEffect(() => {
-        // if sessionToken exists then send to server
         if (sessionToken) {
             sendMessage({ type: "CHECK_TOKEN", token: sessionToken })
             sendMessage({ type: "GET_CHAT_CONTENT", room: roomID, user: username })
         }
-
     }, [sendMessage, roomID, username, sessionToken]);
 
 
+    // delay the MARK_AS_READ message so that the notification can be rendered 
     useEffect(() => {
         if (unreadStartIndex !== null) {
             const timeout = setTimeout(() => {
-                const socket = getWS(); // Or however you access your WebSocket
+                const socket = getWS();
 
                 if (socket && socket.readyState === WebSocket.OPEN) {
-                    socket.send(JSON.stringify({type: "MARK_AS_READ", roomID, readBy: username}));
+                    socket.send(JSON.stringify({type: "MARK_AS_READ", roomID: roomID, readBy: username}));
                 }
 
-                // Clear the unread badge in Dashboard
+                // clear the unread badge in Dashboard
                 setUnreadMessagesCount(prev => ({
                     ...prev,
                     [roomID]: 0
                 }));
 
-            }, 500); // Delay so the UI has time to render
+            }, 500); // delay so the UI has time to render
 
             return () => clearTimeout(timeout);
         }
@@ -123,15 +126,29 @@ function Chat_room({ roomID, onClose, roomName, openChats, setActiveChatID, setS
                 // mark message as read if chat window is already open when new chat arrives
                 const socket = getWS();
                 socket.send(JSON.stringify({ type: "MARK_AS_READ", roomID: roomID, readBy: username }));
+            }
 
-                setSortedRooms(prevRooms => {
-                    const updatedSortedRooms = prevRooms.map(r => {
-                        if (r.roomID === chat.roomID) {
-                            return { ...r, lastMessage: chat.timestamp };
-                        }
-                        return r;
-                    });
-                    return [...updatedSortedRooms].sort((a, b) => new Date(b.lastMessage) - new Date(a.lastMessage));
+            setSortedRooms(prevRooms => {
+                const updatedSortedRooms = prevRooms.map(r => {
+                    if (r.roomID === chat.roomID) {
+                        return { ...r, lastMessage: chat.timestamp };
+                    }
+                    return r;
+                });
+                return [...updatedSortedRooms].sort((a, b) => new Date(b.lastMessage) - new Date(a.lastMessage));
+            });
+            
+            if (chat.roomID !== activeChatID) {
+                // update counter
+                setUnreadMessagesCount(prev => ({
+                    ...prev,
+                    [chat.roomID]: (prev[chat.roomID] || 0) + 1
+                }));
+
+                // play new message sound
+                newMessageSound.currentTime = 0;
+                newMessageSound.play().catch((err) => {
+                    console.warn("Autoplay prevented:", err);
                 });
             }
         });
@@ -141,14 +158,14 @@ function Chat_room({ roomID, onClose, roomName, openChats, setActiveChatID, setS
             messagesEndRef.current.scrollIntoView({ behavior: "instant" });
         }
 
-        // Cleanup
+        // clean-up
         return () => {
             unsubscribe("ACCESS_DENIED");
             unsubscribe("CHECK_TOKEN_RESULT");
             unsubscribe("LOAD_CHAT_CONTENT");
             unsubscribe("NEW_CHAT");
         };
-    }, [navigate, subscribe, unsubscribe, messages, roomID, getWS, username, setSortedRooms, unreadStartIndex]);
+    }, [navigate, subscribe, unsubscribe, messages, roomID, getWS, username, setSortedRooms, unreadStartIndex, activeChatID, setUnreadMessagesCount, newMessageSound]);
 
 
     const handleValidation = () => {
@@ -162,6 +179,11 @@ function Chat_room({ roomID, onClose, roomName, openChats, setActiveChatID, setS
             setError("");
         }
         return validMessage;
+    }
+
+
+    const handleIsRead = () => {
+        setIsRead(true);
     }
 
 
@@ -198,9 +220,12 @@ function Chat_room({ roomID, onClose, roomName, openChats, setActiveChatID, setS
             <div className="chat-messages">
                 {messages.map((msg, index) => (
                     <Fragment key={index}>
-                        {index === unreadStartIndex && (
+                        {index === unreadStartIndex && !isRead && (
                             <div className="new-messages-divider">
-                                <span >New Messages</span>
+                                <div className="divider-header">
+                                    <span className="new-label">New Messages</span>
+                                    <button className="mark-read-button" onClick={() => handleIsRead()}>Mark As Read</button>
+                                </div>
                                 <hr className="divider-line" />
                             </div>
                         )}

@@ -1,4 +1,4 @@
-import { useContext, useState, useEffect } from "react";
+import { useContext, useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { WebSocketContext } from "../websocket/WSContext";
 
@@ -16,28 +16,22 @@ function Dashboard_page()
     const [isOpen, setIsOpen] = useState(false); // open serach box to find friends upon clicking Add Chat button
     const [searchTerm, setSearchTerm] = useState(""); // the search query a user types to look for friends
     const [searchResults, setResults] = useState([]); // search results based on if the query matches any usernames in database
-    const [roomNamesRes, setRoomNames] = useState([]); // load the names of the rooms (name of room is the user you are chatting to)
     const sessionToken = localStorage.getItem("sessionToken");
     const [openChats, setOpenChats] = useState([]); // currently open chat rooms
     const [activeChatID, setActiveChatID] = useState(null);
     const [sortedRooms, setSortedRooms] = useState([]);
     const [unreadMessagesCount, setUnreadMessagesCount] = useState({}); // number of unread messages
+    const newMessageSound = useMemo(() => new Audio('/sounds/ding-36029.mp3'), []);
 
 
+    // if sessionToken exists then send to server
+    // get all rooms user is a member of
     useEffect(() => {
-        // if sessionToken exists then send to server
         if (sessionToken) {
             sendMessage({ type: "CHECK_TOKEN", token: sessionToken })
             sendMessage({ type: "GET_ROOMS" })
         }
-
     }, [sendMessage, sessionToken]);
-
-
-    useEffect(() => {
-        const sorted = [...roomNamesRes].sort((a, b) => new Date(b.lastMessage) - new Date(a.lastMessage));
-        setSortedRooms(sorted);
-    }, [roomNamesRes]);
 
 
     useEffect(() => {
@@ -59,7 +53,6 @@ function Dashboard_page()
             // sort by latest message timestamp
             const sorted = [...rooms].sort((a, b) => new Date(b.lastMessage) - new Date(a.lastMessage));
 
-            setRoomNames(rooms);
             setSortedRooms(sorted);
         })
 
@@ -68,15 +61,11 @@ function Dashboard_page()
         })
 
         subscribe("UPDATE_ROOMS", (roomMessage) => {
-            if (roomMessage.room_exists === false) {
-                setRoomNames(roomMessage.rooms || []);
-            }
-            else if (roomMessage.room_exists === true) {
+            if (roomMessage.room_exists === true) {
                 if (!openChats.find(chat => chat.roomID === roomMessage.roomID)) {
                     setOpenChats(prev => [...prev, { roomID: roomMessage.roomID, roomName: roomMessage.friend }]);
                 }
                 setActiveChatID(roomMessage.roomID);
-
             }
         })
 
@@ -92,12 +81,18 @@ function Dashboard_page()
                 return [...updatedSortedRooms].sort((a, b) => new Date(b.lastMessage) - new Date(a.lastMessage));
             });
 
-            // update counter
             if (chat.roomID !== activeChatID) {
+                // update counter
                 setUnreadMessagesCount(prev => ({
                     ...prev,
                     [chat.roomID]: (prev[chat.roomID] || 0) + 1
                 }));
+
+                // play new message sound
+                newMessageSound.currentTime = 0;
+                newMessageSound.play().catch((err) => {
+                    console.warn("Autoplay prevented:", err);
+                });
             }
         });
 
@@ -107,7 +102,7 @@ function Dashboard_page()
             unsubscribe("LOAD_ROOMS");
             unsubscribe("UPDATE_ROOMS");
         }
-    }, [navigate, subscribe, unsubscribe, openChats, activeChatID])
+    }, [navigate, subscribe, unsubscribe, openChats, activeChatID, newMessageSound])
 
 
     // once user clicks + Add Chat button
@@ -190,12 +185,14 @@ function Dashboard_page()
             <div className="dashboard-content">
             <Header />
 
+            {/* Add Chat button */}
             <div className="add-chat-content">
             <h1>Add New Chat</h1>
             <div className="button-12">
             <button onClick={() => handleClick()}>+ Add Chat</button>
             </div>
 
+            {/* List of all users based on search query */}
             {isOpen && (
                 <div className="add-chat-modal">
                     <input
@@ -259,8 +256,6 @@ function Dashboard_page()
                     setUnreadMessagesCount={setUnreadMessagesCount}
 
                     onClose={() => {
-                        //setOpenChats(prev => prev.filter(c => c.roomID !== chat.roomID));
-
                         setOpenChats(prev => {
                             const updatedChats = prev.filter(c => c.roomID !== chat.roomID);
 
