@@ -38,7 +38,7 @@ function formatTimestamp(timestamp) {
 }
 
 
-function Chat_room({ roomID, onClose, roomName, openChats, activeChatID, setActiveChatID, setSortedRooms, setUnreadMessagesCount })
+function Chat_room({ roomID, onClose, roomName, openChats, activeChatID, setActiveChatID, setSortedRooms, setUnreadMessagesCount, unreadMessagesCount })
 {
     const {subscribe, unsubscribe, sendMessage, getWS} = useContext(WebSocketContext);
     const navigate = useNavigate();
@@ -271,6 +271,9 @@ function Chat_room({ roomID, onClose, roomName, openChats, activeChatID, setActi
                         onClick={() => setActiveChatID(chat.roomID)}
                     >
                         {chat.roomName}
+                        {unreadMessagesCount[chat.roomID] > 0 && (
+                            <span className="chat-tabs-badge1"> {unreadMessagesCount[chat.roomID]} </span>
+                        )}
                     </button>
                 ))}
             </div>
