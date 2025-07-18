@@ -14,6 +14,8 @@ function Dashboard_page()
     const {subscribe, unsubscribe, sendMessage, getWS} = useContext(WebSocketContext);
     const navigate = useNavigate();
     const [isOpen, setIsOpen] = useState(false); // open serach box to find friends upon clicking Add Chat button
+    const [group, setGroup] = useState(false);
+    const [selectedUsers, setSelectedUsers] = useState([]);
     const [searchTerm, setSearchTerm] = useState(""); // the search query a user types to look for friends
     const [searchResults, setResults] = useState([]); // search results based on if the query matches any usernames in database
     const sessionToken = localStorage.getItem("sessionToken");
@@ -50,8 +52,25 @@ function Dashboard_page()
 
         subscribe("LOAD_ROOMS", (loadRooms) => {
             const rooms = loadRooms.rooms || [];
-            // sort by latest message timestamp
-            const sorted = [...rooms].sort((a, b) => new Date(b.lastMessage) - new Date(a.lastMessage));
+            // sort by latest message timestamp, rooms with no messages go to the bottom
+            const sorted = [...rooms].sort((a, b) => {
+                const dateA = a.lastMessage ? new Date(a.lastMessage) : null;
+                const dateB = b.lastMessage ? new Date(b.lastMessage) : null;
+                // if both have dates, compare normally
+                if (dateA && dateB) {
+                    return dateB - dateA;
+                }
+                // if only A has a date, A comes before B
+                if (dateA && !dateB) {
+                    return -1;
+                }
+                // if only B has a date, B comes before A
+                if (!dateA && dateB) {
+                    return 1;
+                }
+                // if neither have dates, keep order unchanged
+                return 0;
+            });
 
             setSortedRooms(sorted);
         })
@@ -61,16 +80,18 @@ function Dashboard_page()
         })
 
         subscribe("UPDATE_ROOMS", (roomMessage) => {
-            if (roomMessage.room_exists === true) {
-                if (!openChats.find(chat => chat.roomID === roomMessage.roomID)) {
-                    setOpenChats(prev => [...prev, { roomID: roomMessage.roomID, roomName: roomMessage.friend }]);
-                }
-                setActiveChatID(roomMessage.roomID);
+            sendMessage({ type: "GET_ROOMS" })
+
+            if (!openChats.find(chat => chat.roomID === roomMessage.roomID)) {
+                setOpenChats(prev => [...prev, { roomID: roomMessage.roomID, roomName: roomMessage.friend }]);
             }
+            setActiveChatID(roomMessage.roomID);
         })
 
         // update unread message counter on new chat messages
         subscribe("NEW_CHAT", (chat) => {
+            sendMessage({ type: "GET_ROOMS" })
+
             setSortedRooms(prevRooms => {
                 const updatedSortedRooms = prevRooms.map(r => {
                     if (r.roomID === chat.roomID) {
@@ -102,7 +123,7 @@ function Dashboard_page()
             unsubscribe("LOAD_ROOMS");
             unsubscribe("UPDATE_ROOMS");
         }
-    }, [navigate, subscribe, unsubscribe, openChats, activeChatID, newMessageSound])
+    }, [navigate, subscribe, unsubscribe, openChats, activeChatID, newMessageSound, sendMessage])
 
 
     // once user clicks + Add Chat button
@@ -140,14 +161,35 @@ function Dashboard_page()
     }
 
 
-    // create new chat
+    const handleSelectUser = (username) => {
+        if (group) {
+            setSelectedUsers(prev =>
+                prev.includes(username)
+                ? prev.filter(user => user !== username)
+                : [...prev, username]
+            );
+        } else {
+            // single DM
+            handleStartChat(username);
+        }
+    }
+
+
+    const removeSelectedUser = (username) => {
+        setSelectedUsers(prev => prev.filter(user => user !== username));
+    };
+
+
+    // create new chat room
     const handleStartChat = (username) => {
         const socket = getWS();
 
         if (socket && socket.readyState === WebSocket.OPEN) {
+            const userList = group ? [...selectedUsers] : [username];
+
             const createChat = JSON.stringify({
                 type: "CREATE_ROOM",
-                with: username,
+                with: userList,
             })
             socket.send(createChat);
             socket.send(JSON.stringify({ type: "EXTEND_SESSION", token: sessionToken}));
@@ -159,6 +201,8 @@ function Dashboard_page()
         setIsOpen(false);
         setSearchTerm("");
         setResults([]);
+        setSelectedUsers([]);
+        setGroup(false);
     }
 
 
@@ -195,6 +239,25 @@ function Dashboard_page()
             {/* List of all users based on search query */}
             {isOpen && (
                 <div className="add-chat-modal">
+
+                    {/* Group DM checkbox */}
+                    <input
+                        className="group-checkbox"
+                        type="checkbox"
+                        id="group"
+                        name="group"
+                        checked={group}
+                        onChange={(e) => {
+                            const isChecked = e.target.checked;
+                            setGroup(isChecked);
+                            if (!isChecked) {
+                                setSelectedUsers([]);
+                            }
+                        }}
+                    />
+                    <label className="group-checkbox-label" htmlFor="group">Create DM group</label>
+
+                    {/* Text input to lookup a user */}
                     <input
                         className="friend-input-field"
                         type="text"
@@ -204,17 +267,54 @@ function Dashboard_page()
                             handleAddChat(e);
                         }}
                     />
+
+                    {group && selectedUsers.length > 0 && (
+                        <div className="selected-users-list">
+                            <p>Selected:</p>
+                            <div className="selected-users-badges">
+                                {selectedUsers.map((user, index) => (
+                                    <span key={index} className="selected-user-badge">
+                                        {user}
+                                        <button onClick={() => removeSelectedUser(user)}>✕</button>
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Create Group button */}
+                    {group && selectedUsers.length >= 2 && (
+                        
+                        <div className="button-12">
+                            <button  onClick={() => handleStartChat()}>
+                                Create Group
+                            </button>
+                        </div>
+                    )}
+
+                    {/* List of users based on search query */}
                     <ul>
                         <div className="button-12-group">
                         {searchResults.map((username, index) => (
                             <li className="button-12" key={index}>
-                                <button onClick={() => handleStartChat(username)}>{username}</button>
+                                {group ? (
+                                    <button
+                                        disabled={selectedUsers.includes(username)}
+                                        onClick={() => handleSelectUser(username)}
+                                    >
+                                        {username} {selectedUsers.includes(username) && "✓"}
+                                    </button>
+                                ) : (
+                                    <button onClick={() => handleStartChat(username)}>{username}</button>
+                                )}
                             </li>
                         ))}
                         </div>
                     </ul>
+
                 </div>
             )}
+
             </div>
 
             {/* List of all DMs the user has created */}
@@ -254,6 +354,7 @@ function Dashboard_page()
                     setActiveChatID={setActiveChatID}
                     setSortedRooms={setSortedRooms}
                     setUnreadMessagesCount={setUnreadMessagesCount}
+                    unreadMessagesCount={unreadMessagesCount}
 
                     onClose={() => {
                         setOpenChats(prev => {

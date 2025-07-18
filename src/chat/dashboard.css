@@ -1,6 +1,6 @@
 .dashboard-content {
 	position: relative; 
-	z-index: 2; /* Make sure your content appears *above* the overlay */
+	z-index: 2;
 	color: white;
 }
 
@@ -9,6 +9,49 @@
 	position: relative;
 	left: 400px;
 	top: 50px;
+}
+
+
+.group-checkbox {
+	position: absolute;
+	left: 110px;
+	top: 75px;
+}
+
+.group-checkbox-label {
+	position: absolute;
+	left: 135px;
+	top: 75px;
+}
+
+
+.selected-users-list {
+    margin: 10px 0;
+}
+
+.selected-users-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.selected-user-badge {
+    background-color: #e0f2fe;
+    color: #0369a1;
+    padding: 4px 8px;
+    border-radius: 9999px;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.selected-user-badge button {
+    background: none;
+    border: none;
+    color: #ef4444;
+    cursor: pointer;
+    font-weight: bold;
 }
 
 
@@ -91,6 +134,10 @@
 
 /* Chat Room/DM buttons */
 .button-12-group {
+	max-height: 400px;
+	overflow-y: auto;
+	padding-top: 12px;
+	box-sizing: border-box;
 	display: flex;
 	flex-direction: column; /* stack buttons vertically */
 	gap: 0.5rem;
@@ -217,12 +264,25 @@
 
 /* tabs at the bottom of chat window */
 .chat-tabs {
-	display: flex;
+	display: flexbox;
 	justify-content: flex-start;
 	padding: 6px 10px;
 	border-top: 1px solid #ccc;
 	background-color: #f0f0f0;
 }
+
+.chat-tabs-badge1 {
+	position: relative;
+	top: -0.7rem;
+	right: -0.7rem; 
+	background-color: #dc2626;  
+	color: #fee2e2;           
+	padding: 0.25rem 0.4rem;   
+	font-size: 0.5rem;        
+	font-weight: bold;
+	border-radius: 9999px;                 
+}
+
 
 .chat-tab {
 	margin-right: 8px;
@@ -232,6 +292,7 @@
 	border-radius: 4px 4px 0 0;
 	cursor: pointer;
 	font-weight: bold;
+	margin-bottom: 5px;
 }
 
 .chat-tab.active {
