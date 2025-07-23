@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-
+import "../src/notFoundPage.css";
 
 function Error_page()
 {
@@ -16,8 +16,10 @@ function Error_page()
         
         <h1 style={{textAlign: "center"}}> 404: Page not found! </h1>
 
-        <button style={{display: "flex", alignItems: "center", justifyContent: "center"}} onClick={() => handleGoHome()}>Go Back Home</button>
-     
+        <div className="back-home">
+            <button onClick={() => handleGoHome()}>Go Back</button>
+        </div>
+        
         </>
     )
 }
