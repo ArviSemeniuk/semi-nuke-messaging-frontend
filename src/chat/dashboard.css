@@ -264,7 +264,6 @@
 
 /* tabs at the bottom of chat window */
 .chat-tabs {
-	display: flexbox;
 	justify-content: flex-start;
 	padding: 6px 10px;
 	border-top: 1px solid #ccc;
